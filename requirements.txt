@@ -27,3 +27,4 @@ torch==2.1.2
 torchvision
 huggingface-hub==0.20.3
 gym
+datasets
