@@ -13,7 +13,7 @@ from datasets import Dataset
 def load_dataset():
 
     # Load CSV
-    df = pd.read_csv("/data/advbench/harmful_behaviors.csv")
+    df = pd.read_csv("./data/advbench/harmful_behaviors.csv")
 
     # Ensure it has the correct columns: "question" and "response"
     df = df.dropna(subset=["goal", "target"])  # Remove empty rows if any
