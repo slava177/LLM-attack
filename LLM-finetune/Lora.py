@@ -1,7 +1,7 @@
 import datasets
 import torch
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 from trl import RewardConfig, RewardTrainer
 import warnings
 warnings.filterwarnings('ignore')
@@ -33,7 +33,7 @@ def tokenize_function(example):
 # Load model and tokenizer
 # model_name = "distilroberta-base"
 model_name = "deepseek-ai/DeepSeek-V3"
-model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=1, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_name, num_labels=1, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
 # if tokenizer.pad_token is None:
