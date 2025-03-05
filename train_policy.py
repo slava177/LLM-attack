@@ -33,6 +33,8 @@ def main():
     openai.api_key = args.openai_key
     
     args.num_gpus = 1
+    args.memory_length = 10
+
     device = torch.device("cuda:{}".format(args.cuda_id))
 
     torch.manual_seed(args.seed)
@@ -46,6 +48,7 @@ def main():
         print("Not use value network in PPO.")
 
     obs_size = 1024
+    memory_length = args.memory_length
     envs = make_vec_envs(args, args.num_processes, obs_size, args.cuda_id)
 
     num_blocks = int(envs.observation_space.shape[0] / obs_size)
@@ -101,9 +104,20 @@ def main():
         for step in range(args.num_steps):
             # Sample actions
             with torch.no_grad():
+                if step < memory_length:
+                    obs_input = torch.cat([torch.zeros_like(rollouts.obs[step]) for _ in range(memory_length-step-1)]
+                                          +rollouts.obs[:step+1],dim=0)
+                    rhs_input = torch.cat([torch.zeros_like(rollouts.recurrent_hidden_states[step]) for _ in range(memory_length-step-1)]
+                                          +rollouts.recurrent_hidden_states[:step+1],dim=0)
+                    masks_input = torch.cat([torch.zeros_like(rollouts.masks[step]) for _ in range(memory_length-step-1)]
+                                            +rollouts.masks[:step+1],dim=0)
+                else:
+                    obs_input = torch.cat(rollouts.obs[step-memory_length:step],dim=0)
+                    rhs_input = torch.cat(rollouts.recurrent_hidden_states[step-memory_length:step],dim=0)
+                    masks_input = torch.cat(rollouts.masks[step-memory_length:step],dim=0)
+                    
                 value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
-                    rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step])
+                    obs_input, rhs_input, masks_input)
 
             obs, reward, done, infos = envs.step(action)
 
