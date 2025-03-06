@@ -42,16 +42,13 @@ peft_config = LoraConfig(
     inference_mode=False,
     r=16,
     lora_alpha=64,
-    lora_dropout=0.1,
-    target_modules=[
-        "q_proj",
-        "k_proj",
-        "v_proj",
-        "o_proj",
-        "gate_proj",
-        "up_proj",
-        "down_proj",
-    ]
+    lora_dropout=0.05,
+    target_modules=["q_proj", "v_proj"],  # Apply LoRA to attention layers,
+    bias="none",  
+    #use_gradient_checkpointing="unsloth",  # True or "unsloth" for very long context
+    #random_state=3407,
+    #use_rslora=False,  
+    #loftq_config=None,
 )
 
 # Apply LoRA to the model
