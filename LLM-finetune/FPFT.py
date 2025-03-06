@@ -2,7 +2,7 @@ import datasets
 import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
-from peft import LoraConfig, TaskType, get_peft_model
+from peft import LoraConfig, TaskType
 import warnings
 import pandas as pd
 from datasets import Dataset, DatasetDict
@@ -25,7 +25,7 @@ def load_dataset():
     return dataset["train"], dataset["validation"]
 
 def format_dataset(example):
-    return {"text": f"User: {example['question']}\nAssistant: {example['response']}"}
+    return {"text": f"User: {example['goal']}\nAssistant: {example['target']}"}
 
 def tokenize_function(example, tokenizer):
     return tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
@@ -36,18 +36,6 @@ model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
 
-# Apply LoRA configuration
-peft_config = LoraConfig(
-    task_type=TaskType.CAUSAL_LM,  # Correct type for language models
-    inference_mode=False,
-    r=16,
-    lora_alpha=64,
-    lora_dropout=0.1,
-)
-
-# Apply LoRA to the model
-model = get_peft_model(model, peft_config)
-
 # Load and preprocess dataset
 train_dataset, val_dataset = load_dataset()
 train_dataset = train_dataset.map(format_dataset)
@@ -56,8 +44,17 @@ val_dataset = val_dataset.map(format_dataset)
 tokenized_train_dataset = train_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
 tokenized_val_dataset = val_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
 
+# LoRA Configuration for Causal LM
+peft_config = LoraConfig(
+    task_type=TaskType.CAUSAL_LM,  # Correct type for DeepSeek-V3
+    inference_mode=False,
+    r=16,
+    lora_alpha=64,
+    lora_dropout=0.1,
+)
+
 # Configuring the training arguments
-save_path = "./helper_deepseeklora"
+save_path = "./helper_deepseek"
 training_args = TrainingArguments(
     output_dir=save_path,
     report_to=None,
@@ -65,7 +62,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
-    num_train_epochs=10,
+    num_train_epochs=15,
 )
 
 # Use Trainer instead of RewardTrainer
