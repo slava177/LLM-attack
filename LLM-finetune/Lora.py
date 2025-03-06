@@ -1,65 +1,61 @@
 import datasets
 import torch
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
-from trl import RewardConfig, RewardTrainer
-import warnings
-warnings.filterwarnings('ignore')
-import pandas as pd
-from datasets import Dataset
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
 from peft import LoraConfig, TaskType
+import warnings
+import pandas as pd
+from datasets import Dataset, DatasetDict
 
+warnings.filterwarnings('ignore')
 
-
+# Load dataset
 def load_dataset():
-
-    # Load CSV
     df = pd.read_csv("./data/advbench/harmful_behaviors.csv")
+    df = df.dropna(subset=["goal", "target"])  # Remove empty rows
 
-    # Ensure it has the correct columns: "question" and "response"
-    df = df.dropna(subset=["goal", "target"])  # Remove empty rows if any
+    # Split into 90% train, 10% validation
+    train_df = df.sample(frac=0.9, random_state=42)
+    val_df = df.drop(train_df.index)
 
-    # Convert to Hugging Face Dataset
-    dataset = Dataset.from_pandas(df)
-
+    dataset = DatasetDict({
+        "train": Dataset.from_pandas(train_df),
+        "validation": Dataset.from_pandas(val_df)
+    })
     return dataset["train"], dataset["validation"]
-
 
 def format_dataset(example):
     return {"text": f"User: {example['question']}\nAssistant: {example['response']}"}
 
-def tokenize_function(example):
+def tokenize_function(example, tokenizer):
     return tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
 
 # Load model and tokenizer
-# model_name = "distilroberta-base"
 model_name = "deepseek-ai/DeepSeek-V3"
-model = AutoModelForCausalLM.from_pretrained(model_name, num_labels=1, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
-# if tokenizer.pad_token is None:
-#     tokenizer.pad_token = tokenizer.eos_token
-#     model.config.pad_token_id = model.config.eos_token_id
 
-
-# Load dataset
+# Load and preprocess dataset
 train_dataset, val_dataset = load_dataset()
 train_dataset = train_dataset.map(format_dataset)
-tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True)
 val_dataset = val_dataset.map(format_dataset)
-tokenized_val_dataset = val_dataset.map(tokenize_function, batched=True)
 
-save_path = "./helper_deepseek"
-# Configuring the training arguments
+tokenized_train_dataset = train_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
+tokenized_val_dataset = val_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
+
+# LoRA Configuration for Causal LM
 peft_config = LoraConfig(
-    task_type=TaskType.SEQ_CLS,
+    task_type=TaskType.CAUSAL_LM,  # Correct type for DeepSeek-V3
     inference_mode=False,
     r=16,
     lora_alpha=64,
     lora_dropout=0.1,
 )
+
 # Configuring the training arguments
-training_args = RewardConfig(
+save_path = "./helper_deepseek"
+training_args = TrainingArguments(
     output_dir=save_path,
     report_to=None,
     evaluation_strategy="epoch",
@@ -68,18 +64,17 @@ training_args = RewardConfig(
     per_device_eval_batch_size=8,
     num_train_epochs=15,
 )
-# Loading the RewardTrainer from TRL
-trainer = RewardTrainer(
+
+# Use Trainer instead of RewardTrainer
+trainer = Trainer(
     model=model,
     args=training_args,
-    processing_class=tokenizer,
     train_dataset=tokenized_train_dataset,
     eval_dataset=tokenized_val_dataset,
-    peft_config=peft_config
+    tokenizer=tokenizer
 )
 trainer.train()
 
-
 # Save model
-model.save_pretrained(save_path)
+trainer.save_model(save_path)
 tokenizer.save_pretrained(save_path)
