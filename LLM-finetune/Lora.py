@@ -43,6 +43,15 @@ peft_config = LoraConfig(
     r=16,
     lora_alpha=64,
     lora_dropout=0.1,
+    target_modules=[
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    ]
 )
 
 # Apply LoRA to the model
@@ -66,6 +75,7 @@ training_args = TrainingArguments(
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
     num_train_epochs=10,
+    learning_rate=1e-6
 )
 
 # Use Trainer instead of RewardTrainer
