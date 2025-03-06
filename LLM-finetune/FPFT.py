@@ -32,7 +32,7 @@ def tokenize_function(example, tokenizer):
 
 # Load model and tokenizer
 model_name = "deepseek-ai/DeepSeek-V3"
-model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, torch_dtype=torch.float16, device_map="auto")
+model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True, torch_dtype=torch.bfloat16, device_map="auto")
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
 
@@ -54,7 +54,7 @@ peft_config = LoraConfig(
 )
 
 # Configuring the training arguments
-save_path = "./helper_deepseek"
+save_path = "./helper_deepseekV3"
 training_args = TrainingArguments(
     output_dir=save_path,
     report_to=None,

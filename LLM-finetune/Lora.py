@@ -31,7 +31,7 @@ def tokenize_function(example, tokenizer):
     return tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
 
 # Load model and tokenizer
-model_name = "deepseek-ai/DeepSeek-V3"
+model_name = "deepseek-ai/DeepSeek-R1"
 model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
@@ -43,12 +43,20 @@ peft_config = LoraConfig(
     r=16,
     lora_alpha=64,
     lora_dropout=0.05,
-    target_modules=["q_proj", "v_proj"],  # Apply LoRA to attention layers,
+    target_modules=[
+        "q_proj",
+        "k_proj",
+        "v_proj",
+        "o_proj",
+        "gate_proj",
+        "up_proj",
+        "down_proj",
+    ],
     bias="none",  
-    #use_gradient_checkpointing="unsloth",  # True or "unsloth" for very long context
-    #random_state=3407,
-    #use_rslora=False,  
-    #loftq_config=None,
+    use_gradient_checkpointing="unsloth",  # True or "unsloth" for very long context
+    random_state=3407,
+    use_rslora=False,  
+    loftq_config=None,
 )
 
 # Apply LoRA to the model
@@ -63,7 +71,7 @@ tokenized_train_dataset = train_dataset.map(lambda e: tokenize_function(e, token
 tokenized_val_dataset = val_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
 
 # Configuring the training arguments
-save_path = "./helper_deepseeklora"
+save_path = "./helper_deepseekR1"
 training_args = TrainingArguments(
     output_dir=save_path,
     report_to=None,

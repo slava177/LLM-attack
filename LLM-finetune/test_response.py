@@ -2,7 +2,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 
 # Define model path (local or Hugging Face repo)
-model_path = "./helper_deepseek"
+model_path = "./helper_deepseekR1"
 
 # Load tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained(model_path)
