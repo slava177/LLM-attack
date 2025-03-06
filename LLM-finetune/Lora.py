@@ -52,10 +52,8 @@ peft_config = LoraConfig(
         "up_proj",
         "down_proj",
     ],
-    bias="none",  
-    use_gradient_checkpointing="unsloth",  # True or "unsloth" for very long context
-    random_state=3407,
-    use_rslora=False,  
+    bias="none",
+    use_rslora=False,
     loftq_config=None,
 )
 
@@ -71,7 +69,7 @@ tokenized_train_dataset = train_dataset.map(lambda e: tokenize_function(e, token
 tokenized_val_dataset = val_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
 
 # Configuring the training arguments
-save_path = "./helper_deepseekR1lora"
+save_path = "./helper_deepseekR1"
 training_args = TrainingArguments(
     output_dir=save_path,
     report_to=None,
@@ -79,9 +77,9 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
-    num_train_epochs=6
-    #num_train_epochs=10,
-    #learning_rate=1e-6
+    #num_train_epochs=6
+    num_train_epochs=10,
+    learning_rate=1e-6
 )
 
 # Use Trainer instead of RewardTrainer
