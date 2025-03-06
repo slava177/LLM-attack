@@ -48,6 +48,14 @@ tokenized_dataset = dataset.map(tokenize_function, batched=True)
 
 save_path = "./helper_deepseek"
 # Configuring the training arguments
+peft_config = LoraConfig(
+    task_type=TaskType.SEQ_CLS,
+    inference_mode=False,
+    r=16,
+    lora_alpha=64,
+    lora_dropout=0.1,
+)
+# Configuring the training arguments
 training_args = RewardConfig(
     output_dir=save_path,
     report_to=None,
