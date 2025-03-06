@@ -5,5 +5,5 @@
 #SBATCH --gpus=H100:1
 #SBATCH --output = "./output.txt"
 
-#source LLM_attack_env/bin/activate
-python LLM-attack/LLM-finetune/lora.py
+#source ../../LLM_attack_env/bin/activate
+python Lora.py
