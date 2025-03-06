@@ -7,6 +7,7 @@ import warnings
 warnings.filterwarnings('ignore')
 import pandas as pd
 from datasets import Dataset
+from peft import LoraConfig, TaskType
 
 
 
@@ -21,7 +22,7 @@ def load_dataset():
     # Convert to Hugging Face Dataset
     dataset = Dataset.from_pandas(df)
 
-    return dataset
+    return dataset["train"], dataset["validation"]
 
 
 def format_dataset(example):
@@ -42,9 +43,11 @@ model.config.pad_token_id = tokenizer.pad_token_id
 
 
 # Load dataset
-dataset = load_dataset()
-dataset = dataset.map(format_dataset)
-tokenized_dataset = dataset.map(tokenize_function, batched=True)
+train_dataset, val_dataset = load_dataset()
+train_dataset = train_dataset.map(format_dataset)
+tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True)
+val_dataset = val_dataset.map(format_dataset)
+tokenized_val_dataset = val_dataset.map(tokenize_function, batched=True)
 
 save_path = "./helper_deepseek"
 # Configuring the training arguments
@@ -70,8 +73,9 @@ trainer = RewardTrainer(
     model=model,
     args=training_args,
     processing_class=tokenizer,
-    train_dataset=tokenized_dataset,
-    # eval_dataset=val_dataset
+    train_dataset=tokenized_train_dataset,
+    eval_dataset=tokenized_val_dataset,
+    peft_config=peft_config
 )
 trainer.train()
 
