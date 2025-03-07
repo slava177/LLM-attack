@@ -7,6 +7,9 @@ import warnings
 import pandas as pd
 from datasets import Dataset, DatasetDict
 
+torch.cuda.empty_cache()
+torch.cuda.reset_peak_memory_stats()
+
 warnings.filterwarnings('ignore')
 
 # Load dataset
@@ -28,10 +31,12 @@ def format_dataset(example):
     return {"text": f"User: {example['goal']}\nAssistant: {example['target']}"}
 
 def tokenize_function(example, tokenizer):
-    return tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
+    tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
+    tokenized_inputs["labels"] = tokenized_inputs["input_ids"].copy()  # Ensure labels are included
+    return tokenized_inputs
 
 # Load model and tokenizer
-model_name = "deepseek-ai/DeepSeek-R1"
+model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
 model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
@@ -50,15 +55,14 @@ peft_config = LoraConfig(
         "o_proj",
         "gate_proj",
         "up_proj",
-        "down_proj",
+        "down_proj"
     ],
-    bias="none",
-    use_rslora=False,
-    loftq_config=None,
+    bias="none"
 )
 
 # Apply LoRA to the model
 model = get_peft_model(model, peft_config)
+model.gradient_checkpointing_enable()
 
 # Load and preprocess dataset
 train_dataset, val_dataset = load_dataset()
