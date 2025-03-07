@@ -37,13 +37,15 @@ def tokenize_function(example, tokenizer):
     tokenized_inputs["labels"] = tokenized_inputs["input_ids"].copy()  # Ensure labels are included
     return tokenized_inputs
 
-bnb_config = BitsAndBytesConfig(
+quantization_config = BitsAndBytesConfig(
     load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.float16  # Use float16 for faster computation
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type='nf4'
 )
 # Load model and tokenizer
 model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=bnb_config, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
 
@@ -91,7 +93,7 @@ training_args = TrainingArguments(
     num_train_epochs=6,
     learning_rate=1e-6,
     bf16=True,  # Use BF16 for better memory efficiency
-    deepspeed="zero3.json",  # Offload to CPU (need to create zero3.json)
+    #deepspeed="zero3.json",  # Offload to CPU (need to create zero3.json)
 )
 
 # Use Trainer instead of RewardTrainer
@@ -103,6 +105,7 @@ trainer = Trainer(
     tokenizer=tokenizer
 )
 print(f"start training \n")
+model.train()
 trainer.train()
 
 # Save model

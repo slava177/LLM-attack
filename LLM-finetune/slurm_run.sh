@@ -5,4 +5,4 @@
 #SBATCH --output="output.txt"
 
 # source ../../LLM_attack_env/bin/activate
-python Lora.py
+python FPFT.py
