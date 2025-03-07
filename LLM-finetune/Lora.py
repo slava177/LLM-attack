@@ -6,6 +6,8 @@ from peft import LoraConfig, TaskType, get_peft_model
 import warnings
 import pandas as pd
 from datasets import Dataset, DatasetDict
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 torch.cuda.empty_cache()
 torch.cuda.reset_peak_memory_stats()
