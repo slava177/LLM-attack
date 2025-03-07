@@ -69,10 +69,6 @@ peft_config = LoraConfig(
         "down_proj"
     ],
     bias="none",
-    use_gradient_checkpointing="unsloth",  # True or "unsloth" for very long context
-    random_state=1000,
-    use_rslora=False,
-    loftq_config=None,
 )
 
 
@@ -109,9 +105,6 @@ trainer = SFTTrainer(
     tokenizer=tokenizer,
     train_dataset=tokenized_train_dataset,
     eval_dataset=tokenized_val_dataset,
-    dataset_text_field="text",
-    max_seq_length=2048,
-    dataset_num_proc=2,
     args=training_args,
 )
 print(f"start training \n")
