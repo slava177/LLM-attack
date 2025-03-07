@@ -1,7 +1,7 @@
 import datasets
 import torch
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, BitsAndBytesConfig
 from peft import LoraConfig, TaskType, get_peft_model
 import warnings
 import pandas as pd
@@ -35,9 +35,13 @@ def tokenize_function(example, tokenizer):
     tokenized_inputs["labels"] = tokenized_inputs["input_ids"].copy()  # Ensure labels are included
     return tokenized_inputs
 
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16  # Use float16 for faster computation
+)
 # Load model and tokenizer
-model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
-model = AutoModelForCausalLM.from_pretrained(model_name, trust_remote_code=True)
+model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=bnb_config, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
 
@@ -60,6 +64,7 @@ peft_config = LoraConfig(
     bias="none"
 )
 
+
 # Apply LoRA to the model
 model = get_peft_model(model, peft_config)
 model.gradient_checkpointing_enable()
@@ -76,14 +81,15 @@ tokenized_val_dataset = val_dataset.map(lambda e: tokenize_function(e, tokenizer
 save_path = "./helper_deepseekR1"
 training_args = TrainingArguments(
     output_dir=save_path,
-    report_to=None,
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
+    gradient_accumulation_steps=4,
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
-    #num_train_epochs=6
-    num_train_epochs=10,
-    learning_rate=1e-6
+    num_train_epochs=6,
+    learning_rate=1e-6,
+    bf16=True,  # Use BF16 for better memory efficiency
+    deepspeed="zero3.json",  # Offload to CPU (need to create zero3.json)
 )
 
 # Use Trainer instead of RewardTrainer
@@ -94,8 +100,10 @@ trainer = Trainer(
     eval_dataset=tokenized_val_dataset,
     tokenizer=tokenizer
 )
+print(f"start training \n")
 trainer.train()
 
 # Save model
 trainer.save_model(save_path)
 tokenizer.save_pretrained(save_path)
+print(f"Model and tokenizer saved at {save_path}")
