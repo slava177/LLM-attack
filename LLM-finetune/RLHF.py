@@ -124,7 +124,7 @@ class RewardTrainer(Trainer):
 # ===========================
 # 🔹 Training Configuration
 # ===========================
-save_path = "./helper_deepseek32"
+save_path = "./helper_deepseek32_finetune"
 training_args = TrainingArguments(
     output_dir=save_path,
     per_device_train_batch_size=4,
