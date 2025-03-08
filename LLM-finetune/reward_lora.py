@@ -47,27 +47,23 @@ def load_dataset():
     })
     return dataset["train"], dataset["validation"]
 
-def format_dataset(example):
-    return {"text": f"User: {example['goal']}\nAssistant: {example['target']}"}
 
 def format_dataset(examples):
     kwargs = {"padding": "max_length", "truncation": True, "max_length": 512, "return_tensors": "pt"}
-    # eos_token = tokenizer.eos_token if tokenizer.eos_token else "<|endoftext|>"
-    prompt_plus_chosen_response = examples["goal"] + "\n" + examples["target"]
-    prompt_plus_rejected_response = examples["goal"] + "\n" + examples["negative"]
+
+    # Format chosen (preferred) and rejected (negative) responses
+    prompt_plus_chosen_response = f"User: {examples['goal']}\nAssistant: {examples['target']}"
+    prompt_plus_rejected_response = f"User: {examples['goal']}\nAssistant: {examples['negative']}"
+
     tokens_chosen = tokenizer(prompt_plus_chosen_response, **kwargs)
     tokens_rejected = tokenizer(prompt_plus_rejected_response, **kwargs)
-    return {
-        "input_ids_chosen": tokens_chosen["input_ids"].squeeze(), "attention_mask_chosen": tokens_chosen["attention_mask"].squeeze(),
-        "input_ids_rejected": tokens_rejected["input_ids"].squeeze(), "attention_mask_rejected": tokens_rejected["attention_mask"].squeeze()
-    }
 
-def tokenize_function(example):
-    tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=512,return_attention_mask=True)
-    tokenized_inputs["labels"] = [
-        -100 if token == tokenizer.pad_token_id else token for token in tokenized_inputs["input_ids"]
-    ]
-    return tokenized_inputs
+    return {
+        "input_ids_chosen": tokens_chosen["input_ids"].squeeze(), 
+        "attention_mask_chosen": tokens_chosen["attention_mask"].squeeze(),
+        "input_ids_rejected": tokens_rejected["input_ids"].squeeze(), 
+        "attention_mask_rejected": tokens_rejected["attention_mask"].squeeze()
+    }
 
 # Apply LoRA configuration
 peft_config = LoraConfig(
@@ -76,15 +72,6 @@ peft_config = LoraConfig(
     r=16,
     lora_alpha=64,
     lora_dropout=0.05,
-    target_modules=[
-        "q_proj",
-        "k_proj",
-        "v_proj",
-        "o_proj",
-        "gate_proj",
-        "up_proj",
-        "down_proj"
-    ],
     bias="none"
 )
 
@@ -98,9 +85,6 @@ model.config.pad_token_id = tokenizer.pad_token_id
 train_dataset, val_dataset = load_dataset()
 train_dataset = train_dataset.map(format_dataset)
 val_dataset = val_dataset.map(format_dataset)
-
-tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True)
-tokenized_val_dataset = val_dataset.map(tokenize_function, batched=True)
 
 # Configuring the training arguments
 save_path = "./helper_deepseek32reward"
@@ -121,8 +105,8 @@ training_args = RewardConfig(
 trainer = RewardTrainer(
     model=model,
     args=training_args,
-    train_dataset=tokenized_train_dataset,
-    eval_dataset=tokenized_val_dataset,
+    train_dataset=train_dataset,
+    eval_dataset=val_dataset,
     tokenizer=tokenizer
 )
 print(f"start training \n")
