@@ -90,14 +90,15 @@ val_dataset = val_dataset.map(format_dataset)
 save_path = "./helper_deepseek32reward"
 training_args = RewardConfig(
     output_dir=save_path,
-    per_device_train_batch_size=2,
-    per_device_eval_batch_size=2,
-    gradient_accumulation_steps=4,
+    per_device_train_batch_size=1,
+    per_device_eval_batch_size=1,
+    gradient_accumulation_steps=2,
     evaluation_strategy="epoch",
     save_strategy="epoch",
     num_train_epochs=20,
     learning_rate=1e-5,
     bf16=True,  # Use BF16 for better memory efficiency
+    report_to=None,
     #deepspeed="zero3.json",  # Offload to CPU (need to create zero3.json)
 )
 
