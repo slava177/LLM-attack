@@ -103,7 +103,7 @@ tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True)
 tokenized_val_dataset = val_dataset.map(tokenize_function, batched=True)
 
 # Configuring the training arguments
-save_path = "./helper_deepseek32"
+save_path = "./helper_deepseek32reward"
 training_args = RewardConfig(
     output_dir=save_path,
     per_device_train_batch_size=2,
