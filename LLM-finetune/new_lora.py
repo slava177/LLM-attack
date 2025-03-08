@@ -25,6 +25,10 @@ model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
+tokenizer.add_special_tokens({"pad_token": "[PAD]"})  # Adding a new pad token
+model.resize_token_embeddings(len(tokenizer))  # Resize model embeddings to account for new token
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = "[PAD]"
 
 # Load dataset
 def load_dataset():
@@ -45,8 +49,10 @@ def format_dataset(example):
     return {"text": f"User: {example['goal']}\nAssistant: {example['target']}"}
 
 def tokenize_function(example):
-    tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=1024)
-    tokenized_inputs["labels"] = tokenized_inputs["input_ids"].copy()  # Ensure labels are included
+    tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=512,return_attention_mask=True)
+    tokenized_inputs["labels"] = [
+        -100 if token == tokenizer.pad_token_id else token for token in tokenized_inputs["input_ids"]
+    ]
     return tokenized_inputs
 
 # Apply LoRA configuration
@@ -71,6 +77,7 @@ peft_config = LoraConfig(
 
 # Apply LoRA to the model
 model = get_peft_model(model, peft_config)
+model.config.pad_token_id = tokenizer.pad_token_id
 #model.gradient_checkpointing_enable()
 
 # Load and preprocess dataset
