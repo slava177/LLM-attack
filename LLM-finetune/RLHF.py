@@ -24,11 +24,11 @@ quantization_config = BitsAndBytesConfig(
     bnb_4bit_quant_type='nf4'
 )
 # Load model in 8bit
-model_name = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=quantization_config,
-    device_map={"": accelerator.local_process_index}  # Ensure multi-GPU compatibility
+    device_map="auto"  # Let accelerate handle device placement
 )
 model = prepare_model_for_kbit_training(model)
 
@@ -46,7 +46,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
 # Ensure tokenizer pad token is set
 if tokenizer.pad_token is None:
-    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token = tokenizer.special_tokens['<extra_0>']
 model.config.pad_token_id = tokenizer.pad_token_id
 
 # ===========================
@@ -66,7 +66,7 @@ class CustomDataset(Dataset):
         prompt_plus_chosen_response = f"User: {example['goal']}\nAssistant: {example['target']}"
         prompt_plus_rejected_response = f"User: {example['goal']}\nAssistant: {example['negative']}"
 
-        kwargs = {"padding": "max_length", "truncation": True, "max_length": 256, "return_tensors": "pt"}
+        kwargs = {"padding": "max_length", "truncation": True, "max_length": 128, "return_tensors": "pt"}
         tokens_chosen = tokenizer(prompt_plus_chosen_response, **kwargs)
         tokens_rejected = tokenizer(prompt_plus_rejected_response, **kwargs)
 
@@ -124,14 +124,15 @@ class RewardTrainer(Trainer):
 # ===========================
 # 🔹 Training Configuration
 # ===========================
+save_path = "./helper_deepseek32"
 training_args = TrainingArguments(
-    output_dir="./helper_deepseek32_finetune",
-    per_device_train_batch_size=8,
-    per_device_eval_batch_size=8,
-    gradient_accumulation_steps=4,
+    output_dir=save_path,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
+    gradient_accumulation_steps=2,
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    num_train_epochs=15,
+    num_train_epochs=20,
     learning_rate=1e-5,
     bf16=True,
     report_to=None
@@ -165,7 +166,7 @@ for epoch in range(15):  # num_train_epochs
 print("Training complete!")
 
 # Save model
-trainer.save_model("./helper_deepseek32_finetune")
-tokenizer.save_pretrained("./helper_deepseek32_finetune")
+trainer.save_model(save_path)
+tokenizer.save_pretrained(save_path)
 
 print("Model and tokenizer saved!")
