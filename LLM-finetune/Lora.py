@@ -91,9 +91,14 @@ training_args = TrainingArguments(
     evaluation_strategy="epoch",
     save_strategy="epoch",
     num_train_epochs=15,
-    learning_rate=1e-6,
+    learning_rate=5e-6,
     bf16=True,  # Use BF16 for better memory efficiency
-    #deepspeed="zero3.json",  # Offload to CPU (need to create zero3.json)
+    deepspeed="ds_config.json",  # Use DeepSpeed for multi-GPU training
+    logging_steps=10,
+    save_total_limit=2,
+    report_to="none",
+    fp16=False,  # Disable FP16 since we use BF16
+    ddp_find_unused_parameters=False  # Avoids DDP issues
 )
 
 # Use Trainer instead of RewardTrainer

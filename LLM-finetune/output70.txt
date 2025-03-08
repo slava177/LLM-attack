@@ -1,0 +1,30 @@
+`low_cpu_mem_usage` was None, now default to True since model is quantized.
+Loading checkpoint shards:   0%|          | 0/17 [00:00<?, ?it/s]Loading checkpoint shards:   6%|▌         | 1/17 [00:03<00:56,  3.55s/it]Loading checkpoint shards:  12%|█▏        | 2/17 [00:07<00:54,  3.62s/it]Loading checkpoint shards:  18%|█▊        | 3/17 [00:08<00:33,  2.42s/it]Loading checkpoint shards:  24%|██▎       | 4/17 [00:11<00:36,  2.77s/it]Loading checkpoint shards:  29%|██▉       | 5/17 [00:15<00:36,  3.06s/it]Loading checkpoint shards:  35%|███▌      | 6/17 [00:18<00:35,  3.26s/it]Loading checkpoint shards:  41%|████      | 7/17 [00:22<00:33,  3.32s/it]Loading checkpoint shards:  47%|████▋     | 8/17 [00:25<00:30,  3.37s/it]Loading checkpoint shards:  53%|█████▎    | 9/17 [00:29<00:27,  3.40s/it]Loading checkpoint shards:  59%|█████▉    | 10/17 [00:32<00:24,  3.44s/it]Loading checkpoint shards:  65%|██████▍   | 11/17 [00:36<00:20,  3.42s/it]Loading checkpoint shards:  71%|███████   | 12/17 [00:39<00:17,  3.43s/it]Loading checkpoint shards:  76%|███████▋  | 13/17 [00:42<00:13,  3.42s/it]Loading checkpoint shards:  82%|████████▏ | 14/17 [00:46<00:10,  3.48s/it]Loading checkpoint shards:  88%|████████▊ | 15/17 [00:49<00:06,  3.46s/it]Loading checkpoint shards:  94%|█████████▍| 16/17 [00:53<00:03,  3.45s/it]Loading checkpoint shards: 100%|██████████| 17/17 [00:57<00:00,  3.64s/it]Loading checkpoint shards: 100%|██████████| 17/17 [00:57<00:00,  3.38s/it]
+Map:   0%|          | 0/468 [00:00<?, ? examples/s]Map: 100%|██████████| 468/468 [00:00<00:00, 34782.83 examples/s]
+Map:   0%|          | 0/52 [00:00<?, ? examples/s]Map: 100%|██████████| 52/52 [00:00<00:00, 18968.85 examples/s]
+Map:   0%|          | 0/468 [00:00<?, ? examples/s]Map: 100%|██████████| 468/468 [00:00<00:00, 2973.99 examples/s]Map: 100%|██████████| 468/468 [00:00<00:00, 2902.54 examples/s]
+Map:   0%|          | 0/52 [00:00<?, ? examples/s]Map: 100%|██████████| 52/52 [00:00<00:00, 2583.07 examples/s]
+[2025-03-08 00:50:19,828] [INFO] [real_accelerator.py:222:get_accelerator] Setting ds_accelerator to cuda (auto detect)
+Warning: The cache directory for DeepSpeed Triton autotune, /home/ziyizhan/.triton/autotune, appears to be on an NFS system. While this is generally acceptable, if you experience slowdowns or hanging when DeepSpeed exits, it is recommended to set the TRITON_CACHE_DIR environment variable to a non-NFS path.
+Traceback (most recent call last):
+  File "/home/ziyizhan/code/LLM-attack/LLM-finetune/Lora.py", line 105, in <module>
+    trainer = Trainer(
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/transformers/trainer.py", line 623, in __init__
+    unwrapped_model = self.accelerator.unwrap_model(model)
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/accelerate/accelerator.py", line 2717, in unwrap_model
+    return extract_model_from_parallel(model, keep_fp32_wrapper, keep_torch_compile)
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/accelerate/utils/other.py", line 90, in extract_model_from_parallel
+    from deepspeed import DeepSpeedEngine
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/deepspeed/__init__.py", line 25, in <module>
+    from . import ops
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/deepspeed/ops/__init__.py", line 15, in <module>
+    from ..git_version_info import compatible_ops as __compatible_ops__
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/deepspeed/git_version_info.py", line 29, in <module>
+    op_compatible = builder.is_compatible()
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/deepspeed/ops/op_builder/fp_quantizer.py", line 35, in is_compatible
+    sys_cuda_major, _ = installed_cuda_version()
+  File "/home/ziyizhan/code/LLM_attack_env/lib64/python3.9/site-packages/deepspeed/ops/op_builder/builder.py", line 51, in installed_cuda_version
+    raise MissingCUDAException("CUDA_HOME does not exist, unable to compile CUDA op(s)")
+deepspeed.ops.op_builder.builder.MissingCUDAException: CUDA_HOME does not exist, unable to compile CUDA op(s)
