@@ -1,7 +1,7 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 # Define model path (local or Hugging Face repo)
-model_path = "./helper_deepseek32reward"
+model_path = "./helper_deepseek32_finetune"
 
 # Load tokenizer and model
 tokenizer = AutoTokenizer.from_pretrained(model_path)

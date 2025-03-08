@@ -1,7 +1,7 @@
 import datasets
 import torch
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, BitsAndBytesConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, BitsAndBytesConfig, AutoModelForSequenceClassification
 from peft import LoraConfig, TaskType, get_peft_model
 import warnings
 import pandas as pd
@@ -24,7 +24,7 @@ quantization_config = BitsAndBytesConfig(
 )
 # Load model and tokenizer
 model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config, trust_remote_code=True)
+model = AutoModelForSequenceClassification.from_pretrained(model_name, quantization_config=quantization_config, num_labels=1, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.special_tokens['<extra_0>']
@@ -67,18 +67,18 @@ def format_dataset(examples):
 
 # Apply LoRA configuration
 peft_config = LoraConfig(
-    task_type=TaskType.CAUSAL_LM,  # Correct type for language models
+    task_type=TaskType.SEQ_CLS,
     inference_mode=False,
     r=16,
     lora_alpha=64,
-    lora_dropout=0.05,
+    lora_dropout=0.1,
     bias="none"
 )
 
 
 # Apply LoRA to the model
-model = get_peft_model(model, peft_config)
-model.config.pad_token_id = tokenizer.pad_token_id
+#model = get_peft_model(model, peft_config)
+#model.config.pad_token_id = tokenizer.pad_token_id
 #model.gradient_checkpointing_enable()
 
 # Load and preprocess dataset
@@ -90,13 +90,13 @@ val_dataset = val_dataset.map(format_dataset)
 save_path = "./helper_deepseek32reward"
 training_args = RewardConfig(
     output_dir=save_path,
-    per_device_train_batch_size=1,
-    per_device_eval_batch_size=1,
-    gradient_accumulation_steps=2,
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
+    gradient_accumulation_steps=4,
     evaluation_strategy="epoch",
     save_strategy="epoch",
     num_train_epochs=20,
-    learning_rate=1e-5,
+    learning_rate=2e-5,
     bf16=True,  # Use BF16 for better memory efficiency
     report_to=None,
     #deepspeed="zero3.json",  # Offload to CPU (need to create zero3.json)
@@ -112,7 +112,7 @@ trainer = RewardTrainer(
     peft_config=peft_config
 )
 print(f"start training \n")
-model.train()
+#model.train()
 trainer.train()
 
 # Save model
