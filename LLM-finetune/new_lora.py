@@ -24,11 +24,9 @@ quantization_config = BitsAndBytesConfig(
 model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-model.config.pad_token_id = tokenizer.pad_token_id
-tokenizer.add_special_tokens({"pad_token": "[PAD]"})  # Adding a new pad token
-model.resize_token_embeddings(len(tokenizer))  # Resize model embeddings to account for new token
 if tokenizer.pad_token is None:
-    tokenizer.pad_token = "[PAD]"
+    tokenizer.pad_token = tokenizer.special_tokens['<extra_0>']
+model.config.pad_token_id = tokenizer.pad_token_id
 
 # Load dataset
 def load_dataset():
