@@ -7,6 +7,8 @@ import warnings
 import pandas as pd
 from datasets import Dataset, DatasetDict
 import os
+from trl import RewardConfig, RewardTrainer
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 torch.cuda.empty_cache()
@@ -33,6 +35,8 @@ def load_dataset():
     df = pd.read_csv("./data/advbench/harmful_behaviors.csv")
     df = df.dropna(subset=["goal", "target"])  # Remove empty rows
 
+    df["negative"] = "I'm sorry. I can not assist you with this request."
+
     # Split into 90% train, 10% validation
     train_df = df.sample(frac=0.9, random_state=42)
     val_df = df.drop(train_df.index)
@@ -45,6 +49,18 @@ def load_dataset():
 
 def format_dataset(example):
     return {"text": f"User: {example['goal']}\nAssistant: {example['target']}"}
+
+def format_dataset(examples):
+    kwargs = {"padding": "max_length", "truncation": True, "max_length": 512, "return_tensors": "pt"}
+    # eos_token = tokenizer.eos_token if tokenizer.eos_token else "<|endoftext|>"
+    prompt_plus_chosen_response = examples["goal"] + "\n" + examples["target"]
+    prompt_plus_rejected_response = examples["goal"] + "\n" + examples["negative"]
+    tokens_chosen = tokenizer(prompt_plus_chosen_response, **kwargs)
+    tokens_rejected = tokenizer(prompt_plus_rejected_response, **kwargs)
+    return {
+        "input_ids_chosen": tokens_chosen["input_ids"].squeeze(), "attention_mask_chosen": tokens_chosen["attention_mask"].squeeze(),
+        "input_ids_rejected": tokens_rejected["input_ids"].squeeze(), "attention_mask_rejected": tokens_rejected["attention_mask"].squeeze()
+    }
 
 def tokenize_function(example):
     tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=512,return_attention_mask=True)
@@ -88,7 +104,7 @@ tokenized_val_dataset = val_dataset.map(tokenize_function, batched=True)
 
 # Configuring the training arguments
 save_path = "./helper_deepseek32"
-training_args = TrainingArguments(
+training_args = RewardConfig(
     output_dir=save_path,
     per_device_train_batch_size=2,
     per_device_eval_batch_size=2,
@@ -102,7 +118,7 @@ training_args = TrainingArguments(
 )
 
 # Use Trainer instead of RewardTrainer
-trainer = Trainer(
+trainer = RewardTrainer(
     model=model,
     args=training_args,
     train_dataset=tokenized_train_dataset,
