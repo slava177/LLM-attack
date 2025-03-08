@@ -35,7 +35,7 @@ def load_dataset():
     df = pd.read_csv("./data/advbench/harmful_behaviors.csv")
     df = df.dropna(subset=["goal", "target"])  # Remove empty rows
 
-    df["negative"] = "I'm sorry. I can not assist you with this request."
+    df["negative"] = "I'm sorry, but I can't assist with that request."
 
     # Split into 90% train, 10% validation
     train_df = df.sample(frac=0.9, random_state=42)
@@ -49,7 +49,7 @@ def load_dataset():
 
 
 def format_dataset(examples):
-    kwargs = {"padding": "max_length", "truncation": True, "max_length": 512, "return_tensors": "pt"}
+    kwargs = {"padding": "max_length", "truncation": True, "max_length": 256, "return_tensors": "pt"}
 
     # Format chosen (preferred) and rejected (negative) responses
     prompt_plus_chosen_response = f"User: {examples['goal']}\nAssistant: {examples['target']}"
@@ -90,7 +90,7 @@ val_dataset = val_dataset.map(format_dataset)
 save_path = "./helper_deepseek32reward"
 training_args = RewardConfig(
     output_dir=save_path,
-    per_device_train_batch_size=2,
+    per_device_train_batch_size=1,
     per_device_eval_batch_size=2,
     gradient_accumulation_steps=4,
     evaluation_strategy="epoch",
@@ -106,7 +106,9 @@ trainer = RewardTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    eval_dataset=val_dataset
+    processing_class=tokenizer,
+    eval_dataset=val_dataset,
+    peft_config=peft_config
 )
 print(f"start training \n")
 model.train()
