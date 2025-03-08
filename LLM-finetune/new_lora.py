@@ -7,27 +7,12 @@ import warnings
 import pandas as pd
 from datasets import Dataset, DatasetDict
 import os
-from trl import SFTTrainer
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 torch.cuda.empty_cache()
 torch.cuda.reset_peak_memory_stats()
 
 warnings.filterwarnings('ignore')
-
-quantization_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.bfloat16,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type='nf4'
-)
-
-# Load model and tokenizer
-model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config, trust_remote_code=True)
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-model.config.pad_token_id = tokenizer.pad_token_id
-EOS_TOKEN = tokenizer.eos_token
 
 # Load dataset
 def load_dataset():
@@ -47,10 +32,22 @@ def load_dataset():
 def format_dataset(example):
     return {"text": f"User: {example['goal']}\nAssistant: {example['target']}"}
 
-def tokenize_function(example):
-    tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
+def tokenize_function(example, tokenizer):
+    tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=1024)
     tokenized_inputs["labels"] = tokenized_inputs["input_ids"].copy()  # Ensure labels are included
     return tokenized_inputs
+
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type='nf4'
+)
+# Load model and tokenizer
+model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config, trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+model.config.pad_token_id = tokenizer.pad_token_id
 
 # Apply LoRA configuration
 peft_config = LoraConfig(
@@ -68,24 +65,24 @@ peft_config = LoraConfig(
         "up_proj",
         "down_proj"
     ],
-    bias="none",
+    bias="none"
 )
 
 
 # Apply LoRA to the model
 model = get_peft_model(model, peft_config)
-model.gradient_checkpointing_enable()
+#model.gradient_checkpointing_enable()
 
 # Load and preprocess dataset
 train_dataset, val_dataset = load_dataset()
 train_dataset = train_dataset.map(format_dataset)
 val_dataset = val_dataset.map(format_dataset)
 
-tokenized_train_dataset = train_dataset.map(tokenize_function, batched=True)
-tokenized_val_dataset = val_dataset.map(tokenize_function, batched=True)
+tokenized_train_dataset = train_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
+tokenized_val_dataset = val_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
 
 # Configuring the training arguments
-save_path = "./helper_deepseekR1"
+save_path = "./helper_deepseek32"
 training_args = TrainingArguments(
     output_dir=save_path,
     per_device_train_batch_size=2,
@@ -93,19 +90,19 @@ training_args = TrainingArguments(
     gradient_accumulation_steps=4,
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    num_train_epochs=6,
+    num_train_epochs=15,
     learning_rate=1e-6,
     bf16=True,  # Use BF16 for better memory efficiency
     #deepspeed="zero3.json",  # Offload to CPU (need to create zero3.json)
 )
 
 # Use Trainer instead of RewardTrainer
-trainer = SFTTrainer(
+trainer = Trainer(
     model=model,
-    tokenizer=tokenizer,
+    args=training_args,
     train_dataset=tokenized_train_dataset,
     eval_dataset=tokenized_val_dataset,
-    args=training_args,
+    tokenizer=tokenizer
 )
 print(f"start training \n")
 model.train()

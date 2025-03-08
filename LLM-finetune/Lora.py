@@ -33,7 +33,7 @@ def format_dataset(example):
     return {"text": f"User: {example['goal']}\nAssistant: {example['target']}"}
 
 def tokenize_function(example, tokenizer):
-    tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=512)
+    tokenized_inputs = tokenizer(example["text"], truncation=True, padding="max_length", max_length=1024)
     tokenized_inputs["labels"] = tokenized_inputs["input_ids"].copy()  # Ensure labels are included
     return tokenized_inputs
 
@@ -44,7 +44,7 @@ quantization_config = BitsAndBytesConfig(
     bnb_4bit_quant_type='nf4'
 )
 # Load model and tokenizer
-model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+model_name = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B"
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quantization_config, trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 model.config.pad_token_id = tokenizer.pad_token_id
@@ -71,7 +71,7 @@ peft_config = LoraConfig(
 
 # Apply LoRA to the model
 model = get_peft_model(model, peft_config)
-model.gradient_checkpointing_enable()
+#model.gradient_checkpointing_enable()
 
 # Load and preprocess dataset
 train_dataset, val_dataset = load_dataset()
@@ -82,7 +82,7 @@ tokenized_train_dataset = train_dataset.map(lambda e: tokenize_function(e, token
 tokenized_val_dataset = val_dataset.map(lambda e: tokenize_function(e, tokenizer), batched=True)
 
 # Configuring the training arguments
-save_path = "./helper_deepseekR1"
+save_path = "./helper_deepseek70"
 training_args = TrainingArguments(
     output_dir=save_path,
     per_device_train_batch_size=2,
@@ -90,7 +90,7 @@ training_args = TrainingArguments(
     gradient_accumulation_steps=4,
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    num_train_epochs=6,
+    num_train_epochs=15,
     learning_rate=1e-6,
     bf16=True,  # Use BF16 for better memory efficiency
     #deepspeed="zero3.json",  # Offload to CPU (need to create zero3.json)
