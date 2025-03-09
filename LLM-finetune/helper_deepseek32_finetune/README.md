@@ -1,5 +1,5 @@
 ---
-base_model: deepseek-ai/DeepSeek-R1-Distill-Llama-8B
+base_model: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
 library_name: peft
 ---
 

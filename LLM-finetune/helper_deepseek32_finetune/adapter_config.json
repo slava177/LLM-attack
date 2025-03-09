@@ -1,7 +1,7 @@
 {
   "alpha_pattern": {},
   "auto_mapping": null,
-  "base_model_name_or_path": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+  "base_model_name_or_path": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
   "bias": "none",
   "eva_config": null,
   "exclude_modules": null,
@@ -23,8 +23,8 @@
   "rank_pattern": {},
   "revision": null,
   "target_modules": [
-    "q_proj",
-    "v_proj"
+    "v_proj",
+    "q_proj"
   ],
   "task_type": "CAUSAL_LM",
   "use_dora": false,
