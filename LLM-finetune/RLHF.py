@@ -66,7 +66,7 @@ class CustomDataset(Dataset):
         prompt_plus_chosen_response = f"User: {example['goal']}\nAssistant: {example['target']}"
         prompt_plus_rejected_response = f"User: {example['goal']}\nAssistant: {example['negative']}"
 
-        kwargs = {"padding": "max_length", "truncation": True, "max_length": 128, "return_tensors": "pt"}
+        kwargs = {"padding": "max_length", "truncation": True, "max_length": 256, "return_tensors": "pt"}
         tokens_chosen = tokenizer(prompt_plus_chosen_response, **kwargs)
         tokens_rejected = tokenizer(prompt_plus_rejected_response, **kwargs)
 
