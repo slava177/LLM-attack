@@ -3,3 +3,5 @@ helper_deepseek70/
 helper_deepseek32reward/
 distilroberta-base-reward-model/
 helper_deepseek32_finetune/
+helper_deepseek14/
+helper_deepseek8/

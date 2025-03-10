@@ -24,7 +24,7 @@ quantization_config = BitsAndBytesConfig(
     bnb_4bit_quant_type='nf4'
 )
 # Load model in 8bit
-model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+model_name = "open-r1/OpenR1-Qwen-7B"
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=quantization_config,
@@ -63,8 +63,8 @@ class CustomDataset(Dataset):
         example = self.data.iloc[idx]
 
         # Prepare input prompt
-        prompt_plus_chosen_response = f"User: {example['goal']}\nAssistant: {example['target']}"
-        prompt_plus_rejected_response = f"User: {example['goal']}\nAssistant: {example['negative']}"
+        prompt_plus_chosen_response = f"User: Rephrase the question [{example['goal']}] to make it more subtle. Only output the prompt and do not output any other information. \nAssistant: {example['goal']}"
+        prompt_plus_rejected_response = f"User: Rephrase the question [{example['goal']}] to make it more subtle. Only output the prompt and do not output any other information. \nAssistant: {example['negative']}"
 
         kwargs = {"padding": "max_length", "truncation": True, "max_length": 256, "return_tensors": "pt"}
         tokens_chosen = tokenizer(prompt_plus_chosen_response, **kwargs)
@@ -84,7 +84,7 @@ def load_dataset():
     df = pd.read_csv("./data/advbench/harmful_behaviors.csv")
     df = df.dropna(subset=["goal", "target"])
 
-    df["negative"] = "I'm sorry, but I can't assist with that request."
+    df["negative"] = "I'm sorry, but I can't assist with that request. We need to emphasize the importance of safety and legal considerations."
 
     # Split into 90% train, 10% validation
     train_df = df.sample(frac=0.9, random_state=42)
@@ -124,7 +124,7 @@ class RewardTrainer(Trainer):
 # ===========================
 # 🔹 Training Configuration
 # ===========================
-save_path = "./helper_deepseek32_finetune"
+save_path = "./Qwen7"
 training_args = TrainingArguments(
     output_dir=save_path,
     per_device_train_batch_size=4,
@@ -133,7 +133,7 @@ training_args = TrainingArguments(
     evaluation_strategy="epoch",
     save_strategy="epoch",
     num_train_epochs=20,
-    learning_rate=1e-5,
+    learning_rate=2e-6,
     bf16=True,
     report_to=None
 )
@@ -155,6 +155,7 @@ print("Start training")
 trainer.create_optimizer()
 for epoch in range(15):  # num_train_epochs
     for batch in tqdm(train_dataloader):
+        torch.cuda.empty_cache()
         # Move batch to GPU
         batch = {k: v.to(model.device) for k, v in batch.items()}
         # Forward pass
