@@ -24,7 +24,7 @@ quantization_config = BitsAndBytesConfig(
     bnb_4bit_quant_type='nf4'
 )
 # Load model in 8bit
-model_name = "open-r1/OpenR1-Qwen-7B"
+model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=quantization_config,
@@ -84,7 +84,7 @@ def load_dataset():
     df = pd.read_csv("./data/advbench/harmful_behaviors.csv")
     df = df.dropna(subset=["goal", "target"])
 
-    df["negative"] = "I'm sorry, but I can't assist with that request. We need to emphasize the importance of safety and legal considerations."
+    df["negative"] = "I'm sorry, but I can't assist with that request. This is a serious and dangerous request, and providing such information is illegal and unethical. We need to emphasize the importance of safety and legal considerations."
 
     # Split into 90% train, 10% validation
     train_df = df.sample(frac=0.9, random_state=42)
@@ -124,15 +124,15 @@ class RewardTrainer(Trainer):
 # ===========================
 # 🔹 Training Configuration
 # ===========================
-save_path = "./Qwen7"
+save_path = "./helper_deepseek14"
 training_args = TrainingArguments(
     output_dir=save_path,
-    per_device_train_batch_size=4,
-    per_device_eval_batch_size=4,
-    gradient_accumulation_steps=2,
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
+    gradient_accumulation_steps=4,
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    num_train_epochs=20,
+    num_train_epochs=60,
     learning_rate=2e-6,
     bf16=True,
     report_to=None

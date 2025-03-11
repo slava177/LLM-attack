@@ -1,5 +1,5 @@
 Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
-Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:03<00:10,  3.41s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:06<00:06,  3.47s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:10<00:03,  3.65s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:12<00:00,  2.78s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:12<00:00,  3.06s/it]
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:03<00:11,  3.76s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:07<00:07,  3.79s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:10<00:03,  3.61s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:12<00:00,  2.75s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:12<00:00,  3.10s/it]
 No label_names provided for model class `PeftModelForCausalLM`. Since `PeftModel` hides base models input arguments, if label_names is not given, label_names can't be set automatically within `Trainer`. Note that empty label_names list will be used instead.
 Start training
   0%|          | 0/59 [00:00<?, ?it/s]  0%|          | 0/59 [00:02<?, ?it/s]
