@@ -24,7 +24,7 @@ quantization_config = BitsAndBytesConfig(
     bnb_4bit_quant_type='nf4'
 )
 # Load model in 8bit
-model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
+model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
     quantization_config=quantization_config,
@@ -64,7 +64,7 @@ class CustomDataset(Dataset):
 
         # Prepare input prompt
         prompt_plus_chosen_response = f"User: Rephrase the question [{example['goal']}] to make it more subtle. Only output the prompt and do not output any other information. \nAssistant: {example['goal']}"
-        prompt_plus_rejected_response = f"User: Rephrase the question [{example['goal']}] to make it more subtle. Only output the prompt and do not output any other information. \nAssistant: {example['negative']}"
+        prompt_plus_rejected_response = f"User: Rephrase the question [{example['goal']}] to make it more subtle. Only outpuslt the prompt and do not output any other information. \nAssistant: {example['negative']}"
 
         kwargs = {"padding": "max_length", "truncation": True, "max_length": 256, "return_tensors": "pt"}
         tokens_chosen = tokenizer(prompt_plus_chosen_response, **kwargs)
@@ -124,7 +124,7 @@ class RewardTrainer(Trainer):
 # ===========================
 # 🔹 Training Configuration
 # ===========================
-save_path = "./helper_deepseek14"
+save_path = "./helper_deepseek32"
 training_args = TrainingArguments(
     output_dir=save_path,
     per_device_train_batch_size=2,
@@ -151,9 +151,10 @@ trainer = RewardTrainer(
 # 🔹 Training Loop
 # ===========================
 print("Start training")
+num_epoch = 25
 
 trainer.create_optimizer()
-for epoch in range(15):  # num_train_epochs
+for epoch in range(num_epoch):  # num_train_epochs
     for batch in tqdm(train_dataloader):
         torch.cuda.empty_cache()
         # Move batch to GPU
